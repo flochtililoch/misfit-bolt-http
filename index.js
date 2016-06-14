@@ -65,7 +65,7 @@ actions.forEach((name) => {
             id = req.params.id,
             bolt = Bolt.get(id);
       assert(bolt, NotFound, `cannot find Bolt with id ${id}`);
-      assert(req.body && req.body[name], BadRequest, `missing value for ${name}`);
+      assert(req.body && req.body[name] !== undefined, BadRequest, `missing value for ${name}`);
 
       const value = req.body[name];
       debug(`${method} called for ${id} with ${value}`);
