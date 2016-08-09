@@ -40,7 +40,7 @@
     "debug": "^2.2.0",
     "express": "^4.13.4",
     "minimist": "^1.2.0",
-    "misfit-bolt": "git+https://github.com/flochtililoch/misfit-bolt.git#noble-device"
+    "misfit-bolt": "^2.0.0"
   },
   "devDependencies": {
     "jshint": "^2.9.2"
