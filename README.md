@@ -34,118 +34,62 @@ Following routes assume bolt UUID is `29852E52-67A0-490A-BC55-7FAB809AD0C0`.
 
 ### Read State
 
+Retrive current `red`, `green`, `blue`, `alpha`, `hue`, `saturation`, `brightness` and `state` values.
+
 *Request:*
 
-`GET /29852E52-67A0-490A-BC55-7FAB809AD0C0/state`
+`GET /29852E52-67A0-490A-BC55-7FAB809AD0C0`
 
-*Response:*
+*Response status:*
+
+```
+200
+```
+
+*Response body:*
 
 ```json
-{"state": true}
-
+{
+  "id": "29852E52-67A0-490A-BC55-7FAB809AD0C0",
+  "red": 0,
+  "green": 255,
+  "blue": 255,
+  "alpha": 100,
+  "hue": 180,
+  "saturation": 100,
+  "brightness": 100,
+  "state": true
+}
 ```
 
 ### Write State
 
+Accepts one or several parameters at the same time.
+Allowed parameters are `red` (`0` to `255`), `green` (`0` to `255`), `blue` (`0` to `255`), `alpha` (`0` to `100`), `hue` (`0` to `360`), `saturation` (`0` to `100`), `brightness` (`0` to `100`) and `state` (`true` / `false`).
+
+#### Examples:
+
 *Request:*
 
 ```
-PUT /29852E52-67A0-490A-BC55-7FAB809AD0C0/state
+PATCH /29852E52-67A0-490A-BC55-7FAB809AD0C0
 {"state": true}
 ```
 
-*Response:*
-
-```json
-{"state": true}
-
+```
+PATCH /29852E52-67A0-490A-BC55-7FAB809AD0C0
+{
+  "state": true,
+  "red": 255,
+  "state": 255
+}
 ```
 
-### Read Hue
 
-*Request:*
-
-`GET /29852E52-67A0-490A-BC55-7FAB809AD0C0/hue`
-
-*Response:*
-
-```json
-{"hue": 87}
+*Response status:*
 
 ```
-
-### Write Hue
-
-*Request:*
-
-```
-PUT /29852E52-67A0-490A-BC55-7FAB809AD0C0/hue
-{"hue": 87}
-```
-
-*Response:*
-
-```json
-{"hue": 87}
-
-```
-
-### Read Saturation
-
-*Request:*
-
-`GET /29852E52-67A0-490A-BC55-7FAB809AD0C0/saturation`
-
-*Response:*
-
-```json
-{"saturation": 87}
-
-```
-
-### Write Saturation
-
-*Request:*
-
-```
-PUT /29852E52-67A0-490A-BC55-7FAB809AD0C0/saturation
-{"saturation": 87}
-```
-
-*Response:*
-
-```json
-{"hue": 87}
-
-```
-
-### Read Brightness
-
-*Request:*
-
-`GET /29852E52-67A0-490A-BC55-7FAB809AD0C0/brightness`
-
-*Response:*
-
-```json
-{"brightness": 87}
-
-```
-
-### Write Brightness
-
-*Request:*
-
-```
-PUT /29852E52-67A0-490A-BC55-7FAB809AD0C0/brightness
-{"brightness": 87}
-```
-
-*Response:*
-
-```json
-{"brightness": 87}
-
+204
 ```
 
 

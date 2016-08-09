@@ -5,82 +5,108 @@
 const express = require('express'),
       bodyParser = require('body-parser'),
       Bolt = require('misfit-bolt'),
+      async = require('async'),
       debug = require('debug')(require('./package').name),
       argv = require('minimist')(process.argv.slice(2)),
       util = require('./lib/util'),
+      errors = require('./lib/errors'),
       ucfirst = util.ucfirst,
       assert = util.assert,
       errorHandler = util.errorHandler,
-      responseHandler = util.responseHandler,
-      errors = require('./lib/errors'),
       NotFound = errors.NotFound,
-      BadRequest = errors.BadRequest,
-      ServerError = errors.ServerError;
+      BadRequest = errors.BadRequest;
 
 const app = express(),
-      port = parseInt(argv.p, 10) || 3000,
-      actions = ['state', 'hue', 'saturation', 'brightness'];
+      port = parseInt(argv.p, 10) || 3000;
 
 app.use(bodyParser.json());
 app.listen(port, () => { console.log(`listening on port ${port}`); });
 
-app.get('/', (req, res) => {
+app.get('/', (_, response) => {
   const bolts = Bolt.bolts.map((bolt) => {
     return {
       id: bolt.id,
-      connected: bolt.connected
     };
   });
-  res.send({bolts});
+  response.send({bolts});
 });
 
-actions.forEach((name) => {
-
-  app.get(`/:id/${name}`, (req, res) => {
-
-    try {
-      const method = `get${ucfirst(name)}`,
-          id = req.params.id,
+app.get(`/:id`, (request, response) => {
+  try {
+    const id = request.params.id,
           bolt = Bolt.get(id);
-      assert(bolt, NotFound, `cannot find Bolt with id ${id}`);
+    assert(bolt, NotFound, `cannot find Bolt with id ${id}`);
 
-      debug(`${method} called for ${id}`);
-      bolt.connect(() => {
-        bolt[method]((err, value) => {
-          debug(`${method} returned value: ${value}`);
-          responseHandler(res, name, value);
+    debug(`Getting ${bolt.id} values`);
+    async.series([
+      (done) => { bolt.getRGBA(done); },
+      (done) => { bolt.getHSB(done); },
+      (done) => { bolt.getState(done); }
+    ], (error, values) => {
+      debug(`Got ${bolt.id} values: ${values}`);
+      if (error) {
+        errorHandler(error, response);
+      } else {
+        response.send({
+          id: bolt.id,
+          red: values[0][0],
+          green: values[0][1],
+          blue: values[0][2],
+          alpha: values[0][3],
+          hue: values[1][0],
+          saturation: values[1][1],
+          brightness: values[1][2],
+          state: values[2]
         });
-      });
-    } catch (err) {
-      debug(`error ${err}`);
-      errorHandler(err, res);
-    }
-
-  });
-
-  app.put(`/:id/${name}`, (req, res) => {
-
-    try {
-      const method = `set${ucfirst(name)}`,
-            id = req.params.id,
-            bolt = Bolt.get(id);
-      assert(bolt, NotFound, `cannot find Bolt with id ${id}`);
-      assert(req.body && req.body[name] !== undefined, BadRequest, `missing value for ${name}`);
-
-      const value = req.body[name];
-      debug(`${method} called for ${id} with ${value}`);
-      bolt.connect(() => {
-        bolt[method](value, (err) => {
-          responseHandler(res, name, value);
-        });
-      });
-    } catch (err) {
-      debug(`error ${err.status}, ${err.message}`);
-      errorHandler(err, res);
-    }
-
-  });
-
+      }
+    });
+  } catch (error) {
+    errorHandler(error, response);
+  }
 });
 
-Bolt.discover();
+app.patch(`/:id`, (request, response) => {
+  var tasks = [];
+
+  try {
+    const id = request.params.id,
+          bolt = Bolt.get(id);
+
+    debug(`Setting ${id} values`);
+    assert(bolt, NotFound, `cannot find Bolt with id ${id}`);
+
+    [
+      'red',
+      'green',
+      'blue',
+      'alpha',
+      'hue',
+      'saturation',
+      'brightness',
+      'state'
+    ].forEach((property) => {
+      const value = request.body[property];
+      if (value !== undefined) {
+        ((value) => {
+          tasks.push((done) => {
+            const method = `set${ucfirst(property)}`;
+            debug(`${id}#${method} called with "${value}"`);
+            bolt[method](value, done);
+          });
+        })(value);
+      }
+    });
+    assert(tasks.length > 0, BadRequest, `no relevant data sent`);
+
+    async.parallel(tasks, function(error) {
+      if (error) {
+        assert(error, BadRequest, error.message);
+      }
+      response.status(204).end();
+    });
+  } catch (err) {
+    errorHandler(err, response, BadRequest);
+  }
+});
+
+Bolt.init();
